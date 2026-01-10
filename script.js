@@ -3,11 +3,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const contactList = document.getElementById('contactList');
     const searchInput = document.getElementById('searchInput');
     const emptyState = document.getElementById('emptyState');
+    const deleteAllBtn = document.getElementById('deleteAllBtn'); // Selector baru
 
-    // Load data dari LocalStorage
     let contacts = JSON.parse(localStorage.getItem('myContacts')) || [];
 
-    // Fungsi Render Kontak ke UI
     const renderContacts = (filter = '') => {
         contactList.innerHTML = '';
         
@@ -17,6 +16,13 @@ document.addEventListener('DOMContentLoaded', () => {
             c.email.toLowerCase().includes(filter.toLowerCase()) ||
             c.location.toLowerCase().includes(filter.toLowerCase())
         );
+
+        // Tampilkan/Sembunyikan tombol Hapus Semua berdasarkan jumlah kontak
+        if (contacts.length > 0) {
+            deleteAllBtn.classList.remove('hidden');
+        } else {
+            deleteAllBtn.classList.add('hidden');
+        }
 
         if (filtered.length === 0) {
             emptyState.classList.remove('hidden');
@@ -37,12 +43,12 @@ document.addEventListener('DOMContentLoaded', () => {
                             <div class="flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-500">
                                 <span class="flex items-center gap-1.5"><i data-lucide="phone" class="w-3.5 h-3.5"></i> ${contact.phone}</span>
                                 ${contact.email ? `<span class="flex items-center gap-1.5"><i data-lucide="mail" class="w-3.5 h-3.5"></i> ${contact.email}</span>` : ''}
-                                ${contact.location ? `<span class="flex items-center gap-1.5 text-blue-600 font-medium"><i data-lucide="map-pin" class="w-3.5 h-3.5"></i> ${contact.location}</span>` : ''}
+                                ${contact.location ? `<span class="flex items-center gap-1.5 text-blue-600 font-medium"><i data-lucide="map-pin" class="w-3.5 h-3.5 text-blue-600"></i> ${contact.location}</span>` : ''}
                             </div>
                         </div>
                     </div>
                     <div class="flex gap-2">
-                        <button onclick="deleteContact(${contact.id})" class="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition border border-transparent hover:border-red-100">
+                        <button onclick="deleteContact(${contact.id})" class="p-2 text-red-500 hover:bg-red-50 rounded-xl transition border border-red-100 shadow-sm" title="Hapus Kontak">
                             <i data-lucide="trash-2" class="w-5 h-5"></i>
                         </button>
                     </div>
@@ -50,14 +56,30 @@ document.addEventListener('DOMContentLoaded', () => {
                 contactList.appendChild(card);
             });
         }
-        // Inisialisasi ulang ikon Lucide setelah render
         if (window.lucide) lucide.createIcons();
     };
 
-    // Handler Simpan Kontak
+    // Fungsi Hapus Satuan
+    window.deleteContact = (id) => {
+        if (confirm('Apakah Anda yakin ingin menghapus kontak ini?')) {
+            contacts = contacts.filter(c => c.id !== id);
+            localStorage.setItem('myContacts', JSON.stringify(contacts));
+            renderContacts();
+        }
+    };
+
+    // Fungsi Hapus Semua
+    deleteAllBtn.addEventListener('click', () => {
+        if (confirm('PERINGATAN: Hapus semua kontak yang tersimpan?')) {
+            contacts = [];
+            localStorage.setItem('myContacts', JSON.stringify(contacts));
+            renderContacts();
+        }
+    });
+
+    // Handler lainnya (Simpan & Search)
     contactForm.addEventListener('submit', (e) => {
         e.preventDefault();
-        
         const newContact = {
             id: Date.now(),
             name: document.getElementById('name').value,
@@ -65,28 +87,13 @@ document.addEventListener('DOMContentLoaded', () => {
             email: document.getElementById('email').value,
             location: document.getElementById('location').value
         };
-
         contacts.push(newContact);
         localStorage.setItem('myContacts', JSON.stringify(contacts));
-        
         renderContacts();
         contactForm.reset();
     });
 
-    // Handler Hapus Kontak (Global)
-    window.deleteContact = (id) => {
-        if (confirm('Hapus kontak ini?')) {
-            contacts = contacts.filter(c => c.id !== id);
-            localStorage.setItem('myContacts', JSON.stringify(contacts));
-            renderContacts();
-        }
-    };
+    searchInput.addEventListener('input', (e) => renderContacts(e.target.value));
 
-    // Handler Pencarian
-    searchInput.addEventListener('input', (e) => {
-        renderContacts(e.target.value);
-    });
-
-    // Inisialisasi awal saat halaman dimuat
     renderContacts();
 });
